@@ -132,6 +132,7 @@ def countdown(ordertime, leadtime):
     lead = datetime.timedelta(seconds=(int(leadtime)))
     loginTime = temp - lead
     loginTime = loginTime.strftime('%Y-%m-%d %H:%M:%S.%f')
+    print(f'真正的登陆时间为：{loginTime}')
     while True:
         now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
         if now > loginTime:
@@ -334,7 +335,8 @@ class buy_tickets:
         self.TICKET_HEADERS = {
             'Accept': 'application/json, text/javascript, */*; q=0.01',
             'Accept-Encoding': 'gzip, deflate, br',
-            'Accept-Language': 'zh-CN,zh;q=0.9',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
+            'Content - Length': '97',
             'Cache-Control': 'no-cache',
             'Connection': 'keep-alive',
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -343,6 +345,9 @@ class buy_tickets:
             'Pragma': 'no-cache',
             'Referer':
                 'https://shop.48.cn/tickets/item/' + str(self.showId) + '?seat_type=' + str(self.seattype),
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site":"same-origin",
             'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Mobile Safari/537.36 Edg/113.0.1774.42',
             'X-Requested-With': 'XMLHttpRequest'
         }
@@ -356,15 +361,18 @@ class buy_tickets:
                             'r': str(self.r)}
         try:
             res = self.sess.post(url=self.ticketPostUrl, data=self.ticket_data, headers=self.TICKET_HEADERS, verify=False)
-            if res.json()['Message'] == 'success':
+            # print(1)
+            # print(res.json())
+            if res.json()['HasError'] == False:
                 print(f"用户{self.user}切票成功!")
                 return True
-            else:
+            # print(2)
+            if res.json()['HasError'] == True:
                 message=res.json()['Message']
-                print(f"用户{self.user}切票失败!  {message}")
+                print(f"用户{self.user} 切票失败!  {message}")
                 return False
         except:
-            print(f"用户{self.user}切票失败!")
+            print(f"由于其它不可知原因导致用户{self.user}切票失败!")
             return False
 
 
@@ -377,7 +385,7 @@ class buy_tickets:
         buyFlag=False#买票状态
         while not buyFlag:
             a = time.time()
-            if loopCount >= 0 and loopCount <= 10:
+            if loopCount >= 0 and loopCount <= 20:
                 buyFlag = self.buyTicket()
                 loopCount += 1
             else:
@@ -404,9 +412,10 @@ def main():
     showId, num, seattype, brandId=gb.ticketsConfigs()
 
     # #获取当前时间
-    # ordertime = getTime()
+    ordertime = getTime()
+    print(f"设置的切票时间是：{ordertime}")
     # # 通过倒计时函数进行一段随机长度的倒计时操作。倒计时长度在30到59秒之间
-    # countdown(ordertime, 30 + random.randint(0, 29))
+    countdown(ordertime, 30 + random.randint(0, 29))
     sess = []
     for inx in range(0, len(users)):
         #创建一个会话
@@ -429,7 +438,7 @@ def main():
         thread.start_new_thread(b.buyloop, (users[inx], locks[inx]))
 
     logger('[MESSAGE] ALL DONE')
-    time.sleep(30)
+    time.sleep(3)
 
 
 
